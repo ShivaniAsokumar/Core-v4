@@ -99,3 +99,9 @@ util/.DS_Store
 util/common/.DS_Store
 
 build
+
+# RPC repository that will be cloned
+printingRPC/
+# Config files
+config.js
+token.json

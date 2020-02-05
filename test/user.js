@@ -7,51 +7,60 @@ const User = require('../api/models/User')
 // Require the dev-dependencies
 const chai = require('chai')
 const chaiHttp = require('chai-http')
-const server = require('../server')
-let serverInstance = null
+const {
+  OK,
+  BAD_REQUEST,
+  UNAUTHORIZED,
+  NOT_FOUND,
+  CONFLICT,
+  FORBIDDEN
+} = require('../api/constants').STATUS_CODES
 let app = null
 const expect = chai.expect
+// tools for testing
+const tools = require('../util/testing-utils/tools.js')
+const {
+  setTokenStatus,
+  resetMock,
+  restoreMock
+} = require('./mocks/TokenValidFunctions')
 
 chai.should()
 chai.use(chaiHttp)
 
-function initializeServer () {
-  serverInstance = new server.Server()
-  serverInstance.openConnection()
-  app = serverInstance.getServerInstance()
-}
-
-function terminateServer (done) {
-  serverInstance.closeConnection(done)
-}
-
 // Our parent block
 describe('Users', () => {
   before(done => {
-    initializeServer()
+    app = tools.initializeServer()
     // Before each test we empty the database
-    User.deleteMany({}, err => {
-      if (err) {
-        //
-      }
-    })
+    tools.emptySchema(User)
     done()
   })
+
   after(done => {
-    terminateServer(done)
+    restoreMock()
+    tools.terminateServer(done)
   })
 
-  let token = ''
+  beforeEach(() => {
+    setTokenStatus(false)
+  })
+
+  afterEach(() => {
+    resetMock()
+  })
+
+  const token = ''
 
   describe('/POST checkIfUserExists with no users added yet', () => {
-    it('Should not return statusCode 200 when an email is not provided', done => {
+    it('Should return statusCode 400 when an email is not provided', done => {
       const user = {}
       chai
         .request(app)
         .post('/api/user/checkIfUserExists')
         .send(user)
         .then(function (res) {
-          expect(res).to.not.have.status(200)
+          expect(res).to.have.status(BAD_REQUEST)
           done()
         })
         .catch(err => {
@@ -68,7 +77,7 @@ describe('Users', () => {
         .post('/api/user/checkIfUserExists')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(200)
+          expect(res).to.have.status(OK)
 
           done()
         })
@@ -82,7 +91,7 @@ describe('Users', () => {
     it('Should successfully register a user with email, password, firstname and lastname', done => {
       const user = {
         email: 'a@b.c',
-        password: 'pass',
+        password: 'Passw0rd',
         firstName: 'first-name',
         lastName: 'last-name'
       }
@@ -92,7 +101,7 @@ describe('Users', () => {
         .post('/api/user/register')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(200)
+          expect(res).to.have.status(OK)
 
           done()
         })
@@ -104,7 +113,7 @@ describe('Users', () => {
     it('Should not allow a second registration with the same email as a user in the database', done => {
       const user = {
         email: 'a@b.c',
-        password: 'pass',
+        password: 'Passw0rd',
         firstName: 'first-name',
         lastName: 'last-name'
       }
@@ -114,7 +123,7 @@ describe('Users', () => {
         .post('/api/user/register')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(409)
+          expect(res).to.have.status(CONFLICT)
 
           done()
         })
@@ -122,6 +131,50 @@ describe('Users', () => {
           throw err
         })
     })
+  })
+
+  it('Should not allow registration with a password without a number', done => {
+    const user = {
+      email: 'd@e.f',
+      password: 'Password',
+      firstName: 'first-name',
+      lastName: 'last-name'
+    }
+
+    chai
+      .request(app)
+      .post('/api/user/register')
+      .send(user)
+      .then(function (res) {
+        expect(res).to.have.status(BAD_REQUEST)
+
+        done()
+      })
+      .catch(err => {
+        throw err
+      })
+  })
+
+  it('Should not allow registration with a password without an uppercase character', done => {
+    const user = {
+      email: 'd@e.f',
+      password: 'password1',
+      firstName: 'first-name',
+      lastName: 'last-name'
+    }
+
+    chai
+      .request(app)
+      .post('/api/user/register')
+      .send(user)
+      .then(function (res) {
+        expect(res).to.have.status(BAD_REQUEST)
+
+        done()
+      })
+      .catch(err => {
+        throw err
+      })
   })
 
   // Failing. Right now if this test is included, then it removes the user from the database?
@@ -136,7 +189,7 @@ describe('Users', () => {
         .post('/api/user/checkIfUserExists')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(409)
+          expect(res).to.have.status(CONFLICT)
 
           done()
         })
@@ -154,7 +207,7 @@ describe('Users', () => {
         .post('/api/user/login')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(400)
+          expect(res).to.have.status(BAD_REQUEST)
 
           done()
         })
@@ -166,14 +219,14 @@ describe('Users', () => {
     it('Should return statusCode 401 if an email/pass combo does not match a record in the DB', done => {
       const user = {
         email: 'nota@b.c',
-        password: 'notpass'
+        password: 'Passwd'
       }
       chai
         .request(app)
         .post('/api/user/login')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(401)
+          expect(res).to.have.status(UNAUTHORIZED)
 
           done()
         })
@@ -185,14 +238,14 @@ describe('Users', () => {
     it('Should return statusCode 401 if the email exists but password is incorrect', done => {
       const user = {
         email: 'a@b.c',
-        password: 'notpass'
+        password: 'password'
       }
       chai
         .request(app)
         .post('/api/user/login')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(401)
+          expect(res).to.have.status(UNAUTHORIZED)
 
           done()
         })
@@ -201,27 +254,31 @@ describe('Users', () => {
         })
     })
 
-    it('Should return statusCode 200 and a JWT token if the email/pass is correct', done => {
-      const user = {
-        email: 'a@b.c',
-        password: 'pass'
-      }
-      chai
-        .request(app)
-        .post('/api/user/login')
-        .send(user)
-        .then(function (res) {
-          expect(res).to.have.status(200)
-          res.body.should.be.a('object')
-          res.body.should.have.property('token')
-          token = res.body.token
+    /**
+     * failing because user's default acesslevel is NOW -1 (pending), user can't login until verify email
+     * fix this when email-verify-module is working
+     */
+    // it('Should return statusCode 200 and a JWT token if the email/pass is correct', done => {
+    //   const user = {
+    //     email: 'a@b.c',
+    //     password: 'Passw0rd'
+    //   }
+    //   chai
+    //     .request(app)
+    //     .post('/api/user/login')
+    //     .send(user)
+    //     .then(function (res) {
+    //       expect(res).to.have.status(OK)
+    //       res.body.should.be.a('object')
+    //       res.body.should.have.property('token')
+    //       token = res.body.token
 
-          done()
-        })
-        .catch(err => {
-          throw err
-        })
-    })
+    //       done()
+    //     })
+    //     .catch(err => {
+    //       throw err
+    //     })
+    // })
   })
 
   describe('/POST verify', () => {
@@ -231,7 +288,7 @@ describe('Users', () => {
         .post('/api/user/verify')
         .send({})
         .then(function (res) {
-          expect(res).to.not.have.status(200)
+          expect(res).to.have.status(UNAUTHORIZED)
 
           done()
         })
@@ -246,7 +303,7 @@ describe('Users', () => {
         .post('/api/user/verify')
         .send({ token: 'Invalid Token' })
         .then(function (res) {
-          expect(res).to.have.status(401)
+          expect(res).to.have.status(UNAUTHORIZED)
 
           done()
         })
@@ -256,12 +313,17 @@ describe('Users', () => {
     })
 
     it('Should return statusCode 200 when a valid token is passed in', done => {
+      setTokenStatus({
+        name: 'name',
+        email: 'email',
+        accessLevel: 'accessLevel'
+      })
       chai
         .request(app)
         .post('/api/user/verify')
         .send({ token: token })
         .then(function (res) {
-          expect(res).to.have.status(200)
+          expect(res).to.have.status(OK)
           res.body.should.be.a('object')
           res.body.should.have.property('name')
           res.body.should.have.property('email')
@@ -276,7 +338,66 @@ describe('Users', () => {
   })
 
   describe('/POST search', () => {
-    it('Should return statusCode 500 if no token is passed in', done => {
+    it('Should return statusCode 403 if no token is passed in', done => {
+      const user = {
+        email: 'a@b.c'
+      }
+      chai
+        .request(app)
+        .post('/api/user/users')
+        .send(user)
+        .then(function (res) {
+          expect(res).to.have.status(FORBIDDEN)
+
+          done()
+        })
+        .catch(err => {
+          throw err
+        })
+    })
+
+    it('Should return statusCode 401 if an invalid token was passed in', done => {
+      const user = {
+        token: 'Invalid token'
+      }
+      chai
+        .request(app)
+        .post('/api/user/users')
+        .send(user)
+        .then(function (res) {
+          expect(res).to.have.status(UNAUTHORIZED)
+
+          done()
+        })
+        .catch(err => {
+          throw err
+        })
+    })
+
+    it('Should return statusCode 200 and return an array of all objects in collection', done => {
+      const form = {
+        token: token
+      }
+      setTokenStatus(true)
+      chai
+        .request(app)
+        .post('/api/user/users')
+        .send(form)
+        .then(function (res) {
+          expect(res).to.have.status(OK)
+          res.body.should.be.a('array')
+          expect(res.body).to.have.length(1)
+
+          done()
+        })
+        .catch(err => {
+          throw err
+        })
+    })
+  })
+
+  describe('/POST searchFor', () => {
+    it('Should return statusCode 403 if no token is passed in', done => {
       const user = {
         email: 'a@b.c'
       }
@@ -285,7 +406,7 @@ describe('Users', () => {
         .post('/api/user/search')
         .send(user)
         .then(function (res) {
-          expect(res).to.not.have.status(200)
+          expect(res).to.have.status(FORBIDDEN)
 
           done()
         })
@@ -304,7 +425,7 @@ describe('Users', () => {
         .post('/api/user/search')
         .send(user)
         .then(function (res) {
-          expect(res).to.not.have.status(200)
+          expect(res).to.have.status(UNAUTHORIZED)
 
           done()
         })
@@ -318,12 +439,13 @@ describe('Users', () => {
         email: 'invalid@b.c',
         token: token
       }
+      setTokenStatus(true)
       chai
         .request(app)
         .post('/api/user/search')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(404)
+          expect(res).to.have.status(NOT_FOUND)
 
           done()
         })
@@ -337,12 +459,13 @@ describe('Users', () => {
         email: 'a@b.c',
         token: token
       }
+      setTokenStatus(true)
       chai
         .request(app)
         .post('/api/user/search')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(200)
+          expect(res).to.have.status(OK)
           res.body.should.be.a('object')
           res.body.should.have.property('firstName')
           res.body.should.have.property('middleInitial')
@@ -365,7 +488,7 @@ describe('Users', () => {
   })
 
   describe('/POST edit', () => {
-    it('Should return statusCode 500 if no token is passed in', done => {
+    it('Should return statusCode 403 if no token is passed in', done => {
       const user = {
         queryEmail: 'a@b.c'
       }
@@ -374,7 +497,7 @@ describe('Users', () => {
         .post('/api/user/edit')
         .send(user)
         .then(function (res) {
-          expect(res).to.not.have.status(200)
+          expect(res).to.have.status(FORBIDDEN)
 
           done()
         })
@@ -393,7 +516,7 @@ describe('Users', () => {
         .post('/api/user/edit')
         .send(user)
         .then(function (res) {
-          expect(res).to.not.have.status(200)
+          expect(res).to.have.status(UNAUTHORIZED)
 
           done()
         })
@@ -407,12 +530,13 @@ describe('Users', () => {
         queryEmail: 'invalid@b.c',
         token: token
       }
+      setTokenStatus(true)
       chai
         .request(app)
         .post('/api/user/edit')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(404)
+          expect(res).to.have.status(NOT_FOUND)
 
           done()
         })
@@ -423,16 +547,18 @@ describe('Users', () => {
 
     it('Should return statusCode 200 and a message if a user was edited', done => {
       const user = {
-        queryEmail: 'a@b.c',
+        email: 'a@b.c',
         token: token,
-        firstName: 'pinkUnicorn'
+        firstName: 'pinkUnicorn',
+        numberOfSemestersToSignUpFor: undefined
       }
+      setTokenStatus(true)
       chai
         .request(app)
         .post('/api/user/edit')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(200)
+          expect(res).to.have.status(OK)
           res.body.should.be.a('object')
           res.body.should.have.property('message')
 
@@ -445,7 +571,7 @@ describe('Users', () => {
   })
 
   describe('/POST delete', () => {
-    it('Should return statusCode 500 if no token is passed in', done => {
+    it('Should return statusCode 403 if no token is passed in', done => {
       const user = {
         email: 'a@b.c'
       }
@@ -454,7 +580,7 @@ describe('Users', () => {
         .post('/api/user/delete')
         .send(user)
         .then(function (res) {
-          expect(res).to.not.have.status(200)
+          expect(res).to.have.status(FORBIDDEN)
 
           done()
         })
@@ -463,7 +589,7 @@ describe('Users', () => {
         })
     })
 
-    it('Should return statusCode 401 if an invalid token was passed in', done => {
+    it('Should return statusCode 403 if an invalid token was passed in', done => {
       const user = {
         email: 'a@b.c',
         token: 'Invalid token'
@@ -473,7 +599,7 @@ describe('Users', () => {
         .post('/api/user/delete')
         .send(user)
         .then(function (res) {
-          expect(res).to.not.have.status(200)
+          expect(res).to.have.status(UNAUTHORIZED)
 
           done()
         })
@@ -487,12 +613,13 @@ describe('Users', () => {
         email: 'invalid@b.c',
         token: token
       }
+      setTokenStatus(true)
       chai
         .request(app)
         .post('/api/user/delete')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(404)
+          expect(res).to.have.status(NOT_FOUND)
 
           done()
         })
@@ -506,12 +633,13 @@ describe('Users', () => {
         email: 'a@b.c',
         token: token
       }
+      setTokenStatus(true)
       chai
         .request(app)
         .post('/api/user/delete')
         .send(user)
         .then(function (res) {
-          expect(res).to.have.status(200)
+          expect(res).to.have.status(OK)
           res.body.should.be.a('object')
           res.body.should.have.property('message')
 

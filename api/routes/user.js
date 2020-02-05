@@ -1,23 +1,5 @@
-// PROJECT:   Core-v4
-//  Name:    R. Javier
-//  File:    api/routes/membershipApplication/index.js
-//  Date Created:  March 17, 2019
-//  Last Modified:  March 17, 2019
-//  Details:
-//      This file contains routing logic to service all routes requested under the the
-//                  "/memberApplication" endpoint (a.k.a. the Membership Application Module)
-//     which is publicly exposed to allow applications from the public facing site.
-//  Dependencies:
-//      JavaScript ECMAscript 6
-
-// TODO:
-// Build out rest of login to include tracking last login
-// Remove "Username" in favor of email?
-// "ClearanceLevel" or access level implementation
-
 'use strict'
 
-// Includes (include as many as you need; the bare essentials are included here)
 const express = require('express')
 const router = express.Router()
 const passport = require('passport')
@@ -27,23 +9,34 @@ const logger = require(`${settings.util}/logger`)
 const jwt = require('jsonwebtoken')
 const config = require('../config/config')
 const User = require('../models/User.js')
+const {
+  checkIfTokenSent,
+  checkIfTokenValid
+} = require('../../util/api-utils/token-functions')
+const {
+  OK,
+  BAD_REQUEST,
+  UNAUTHORIZED,
+  FORBIDDEN,
+  NOT_FOUND,
+  CONFLICT
+} = require('../constants').STATUS_CODES
+const membershipState = require('../../src/Enums').membershipState
 
-const { OK, NOT_FOUND, UNAUTHORIZED, BAD_REQUEST, CONFLICT } = {
-  OK: 200,
-  NOT_FOUND: 404,
-  UNAUTHORIZED: 401,
-  BAD_REQUEST: 400,
-  CONFLICT: 409
-}
+const validateVerificationEmail = require('../mailer/auth')
+  .validateVerificationEmail
 
 router.post('/checkIfUserExists', (req, res) => {
+  const { email } = req.body
+  if (!email) {
+    return res.sendStatus(BAD_REQUEST)
+  }
   User.findOne(
     {
-      email: req.body.email.toLowerCase()
+      email: email.toLowerCase()
     },
     function (error, user) {
       if (error) {
-        // Bad Request
         logger.log(`User /user/checkIfUserExists error: ${error}`)
         return res.status(BAD_REQUEST).send({ message: 'Bad Request.' })
       }
@@ -61,7 +54,6 @@ router.post('/checkIfUserExists', (req, res) => {
 
 // Register a member
 router.post('/register', function (req, res) {
-  // Ok
   if (req.body.email && req.body.password) {
     const newUser = new User({
       password: req.body.password,
@@ -80,25 +72,23 @@ router.post('/register', function (req, res) {
     const testPassword = testPasswordStrength(req.body.password)
 
     if (!testPassword.success) {
-      // Bad Request
       return res.status(BAD_REQUEST).send({ message: testPassword.message })
     }
 
     newUser.save(function (error) {
       if (error) {
-        // Confict
         res.status(CONFLICT).send({ message: 'Username already exists.' })
       } else {
-        // Ok
         res.sendStatus(OK)
       }
     })
   }
 })
 
-// Login
 router.post('/login', function (req, res) {
-  if (!req.body.email || !req.body.password) return res.sendStatus(400)
+  if (!req.body.email || !req.body.password) {
+    return res.sendStatus(BAD_REQUEST)
+  }
 
   User.findOne(
     {
@@ -106,13 +96,11 @@ router.post('/login', function (req, res) {
     },
     function (error, user) {
       if (error) {
-        // Bad Request
         logger.log('User API bad request: ', error)
         return res.status(BAD_REQUEST).send({ message: 'Bad Request.' })
       }
 
       if (!user) {
-        // Unauthorized if the username does not match any records in the database
         logger.log("User/pass doesn't match our records: ", req.body.email)
         res
           .status(UNAUTHORIZED)
@@ -123,7 +111,7 @@ router.post('/login', function (req, res) {
           if (isMatch && !error) {
             if (
               new Date() - user.membershipValidUntil > 0 &&
-              user.accessLevel < 2
+              user.accessLevel < membershipState.PENDING
             ) {
               return res
                 .status(UNAUTHORIZED)
@@ -184,136 +172,179 @@ router.post('/login', function (req, res) {
 
 // Delete a member
 router.post('/delete', (req, res) => {
-  // Strip JWT from the token
-  const token = req.body.token.replace(/^JWT\s/, '')
+  if (!checkIfTokenSent(req)) {
+    return res.sendStatus(FORBIDDEN)
+  } else if (!checkIfTokenValid(req)) {
+    return res.sendStatus(UNAUTHORIZED)
+  }
 
-  jwt.verify(token, config.secretKey, function (error, decoded) {
+  User.deleteOne({ email: req.body.email }, function (error, user) {
     if (error) {
-      // Unauthorized
-      res.sendStatus(UNAUTHORIZED)
-    } else {
-      // Ok
-      // Delete a user
-      User.deleteOne({ email: req.body.email }, function (error, user) {
-        // if (error) return res.sendStatus(INTERNAL_SERVER_ERROR)
-        if (error) res.status(400).send({ message: 'Bad Request.' })
+      res.status(BAD_REQUEST).send({ message: 'Bad Request.' })
+    }
 
-        if (user.n < 1) {
-          res.status(NOT_FOUND).send({ message: 'User not found.' })
-        } else {
-          res.status(OK).send({ message: `${req.body.email} was deleted.` })
-        }
-      })
+    if (user.n < 1) {
+      res.status(NOT_FOUND).send({ message: 'User not found.' })
+    } else {
+      res.status(OK).send({ message: `${req.body.email} was deleted.` })
     }
   })
 })
 
 // Search for a member
 router.post('/search', function (req, res) {
-  // Strip JWT from the token
-  const token = req.body.token.replace(/^JWT\s/, '')
-
-  jwt.verify(token, config.secretKey, function (error, decoded) {
+  if (!checkIfTokenSent(req)) {
+    return res.sendStatus(FORBIDDEN)
+  } else if (!checkIfTokenValid(req)) {
+    return res.sendStatus(UNAUTHORIZED)
+  }
+  User.findOne({ email: req.body.email }, function (error, result) {
     if (error) {
-      // Unauthorized
-      res.sendStatus(UNAUTHORIZED)
-    } else {
-      // Ok
-      // Build this out to search for a user
-      // res.status(200).send(decoded.username)
-      User.findOne({ email: req.body.email }, function (error, result) {
-        // if (error) return res.sendStatus(INTERNAL_SERVER_ERROR)
-        if (error) res.status(400).send({ message: 'Bad Request.' })
-
-        if (!result) {
-          return res
-            .status(NOT_FOUND)
-            .send({ message: `${req.body.email} not found.` })
-        }
-
-        const user = {
-          firstName: result.firstName,
-          middleInitial: result.middleInitial,
-          lastName: result.lastName,
-          email: result.email,
-          emailVerified: result.emailVerified,
-          emailOptIn: result.emailOptIn,
-          active: result.active,
-          accessLevel: result.accessLevel,
-          major: result.major,
-          joinDate: result.joinDate,
-          lastLogin: result.lastLogin,
-          membershipValidUntil: result.membershipValidUntil,
-          pagesPrinted: result.pagesPrinted
-        }
-        return res.status(OK).send(user)
-      })
+      res.status(BAD_REQUEST).send({ message: 'Bad Request.' })
     }
+
+    if (!result) {
+      return res
+        .status(NOT_FOUND)
+        .send({ message: `${req.body.email} not found.` })
+    }
+
+    const user = {
+      firstName: result.firstName,
+      middleInitial: result.middleInitial,
+      lastName: result.lastName,
+      email: result.email,
+      emailVerified: result.emailVerified,
+      emailOptIn: result.emailOptIn,
+      active: result.active,
+      accessLevel: result.accessLevel,
+      major: result.major,
+      joinDate: result.joinDate,
+      lastLogin: result.lastLogin,
+      membershipValidUntil: result.membershipValidUntil,
+      pagesPrinted: result.pagesPrinted,
+      doorCode: result.doorCode
+    }
+    return res.status(OK).send(user)
   })
+})
+
+// Search for all members
+router.post('/users', function (req, res) {
+  if (!checkIfTokenSent(req)) {
+    return res.sendStatus(FORBIDDEN)
+  } else if (!checkIfTokenValid(req)) {
+    return res.sendStatus(UNAUTHORIZED)
+  }
+  User.find()
+    .sort({ joinDate: -1 })
+    .then(items => res.status(OK).send(items))
+    .catch(() => {
+      res.status(BAD_REQUEST).send({ message: 'Bad Request.' })
+    })
 })
 
 // Edit/Update a member record
 router.post('/edit', (req, res) => {
-  // Strip JWT from the token
-  const token = req.body.token.replace(/^JWT\s/, '')
-  const query = { email: req.body.queryEmail }
-  const user = {
-    ...req.body
+  if (!checkIfTokenSent(req)) {
+    return res.sendStatus(FORBIDDEN)
+  } else if (!checkIfTokenValid(req)) {
+    return res.sendStatus(UNAUTHORIZED)
   }
+  const query = { email: req.body.email }
+  const user =
+    typeof req.body.numberOfSemestersToSignUpFor === 'undefined'
+      ? { ...req.body }
+      : {
+        ...req.body,
+        membershipValidUntil: getMemberValidationDate(
+          parseInt(req.body.numberOfSemestersToSignUpFor)
+        )
+      }
+
+  delete user.numberOfSemestersToSignUpFor
 
   // Remove the auth token from the form getting edited
-  delete user.queryEmail
   delete user.token
 
-  jwt.verify(token, config.secretKey, function (error, decoded) {
+  User.updateOne(query, { ...user }, function (error, result) {
     if (error) {
-      // Unauthorized
-      res.sendStatus(UNAUTHORIZED)
-    } else {
-      // Ok
-      // Build this out to search for a user
-      User.updateOne(query, { ...user }, function (error, result) {
-        // if (error) return res.sendStatus(INTERNAL_SERVER_ERROR)
-        if (error) res.status(400).send({ message: 'Bad Request.' })
-
-        if (result.nModified < 1) {
-          return res
-            .status(NOT_FOUND)
-            .send({ message: `${req.body.queryEmail} not found.` })
-        }
-
-        return res
-          .status(OK)
-          .send({ message: `${req.body.queryEmail} was updated.` })
-      })
+      res.status(BAD_REQUEST).send({ message: 'Bad Request.' })
     }
+
+    if (result.nModified < 1) {
+      return res
+        .status(NOT_FOUND)
+        .send({ message: `${query.email} not found.` })
+    }
+
+    return res.status(OK).send({
+      message: `${query.email} was updated.`,
+      membershipValidUntil: user.membershipValidUntil
+    })
+  })
+})
+
+router.post('/validateEmail', function (req, res) {
+  User.findOne({ email: req.body.email }, async function (error, result) {
+    if (error) {
+      res.status(BAD_REQUEST).send({ message: 'Bad Request.' })
+    }
+
+    if (!result) {
+      return res
+        .status(NOT_FOUND)
+        .send({ message: `${req.body.email} not found.` })
+    }
+
+    const validated = await validateVerificationEmail(
+      req.body.email,
+      req.body.hashedId
+    )
+    if (validated) return res.sendStatus(OK)
+
+    return res.sendStatus(BAD_REQUEST)
+  })
+})
+
+// Edit/Update a member record
+router.post('/setEmailToVerified', (req, res) => {
+  const query = { email: req.body.email }
+
+  User.updateOne(query, { emailVerified: true }, function (error, result) {
+    if (error) {
+      res.status(BAD_REQUEST).send({ message: 'Bad Request.' })
+    }
+
+    if (result.nModified < 1) {
+      return res
+        .status(NOT_FOUND)
+        .send({ message: `${req.body.queryEmail} not found.` })
+    }
+
+    return res.status(OK).send({
+      message: `${req.body.queryEmail} was updated.`
+    })
   })
 })
 
 router.post('getPagesPrintedCount', (req, res) => {
-  // Strip JWT from the token
-  const token = req.body.token.replace(/^JWT\s/, '')
-
-  jwt.verify(token, config.secretKey, function (error, decoded) {
+  if (!checkIfTokenSent(req)) {
+    return res.sendStatus(FORBIDDEN)
+  } else if (!checkIfTokenValid(req)) {
+    return res.sendStatus(UNAUTHORIZED)
+  }
+  User.findOne({ email: req.body.email }, function (error, result) {
     if (error) {
-      // Unauthorized
-      res.sendStatus(UNAUTHORIZED)
-    } else {
-      // Ok
-      // Build this out to search for a user
-      User.findOne({ email: req.body.email }, function (error, result) {
-        // if (error) return res.sendStatus(INTERNAL_SERVER_ERROR)
-        if (error) res.status(400).send({ message: 'Bad Request.' })
-
-        if (!result) {
-          return res
-            .status(NOT_FOUND)
-            .send({ message: `${req.body.email} not found.` })
-        }
-
-        return res.status(OK).send(result.pagesPrinted)
-      })
+      res.status(BAD_REQUEST).send({ message: 'Bad Request.' })
     }
+
+    if (!result) {
+      return res
+        .status(NOT_FOUND)
+        .send({ message: `${req.body.email} not found.` })
+    }
+    return res.status(OK).json(result.pagesPrinted)
   })
 })
 
@@ -322,17 +353,16 @@ router.post('getPagesPrintedCount', (req, res) => {
 // Returns the name and accesslevel of the user w/ the given access token
 // Todo: Check the DB to ensure the access level is correct and the user exists
 router.post('/verify', function (req, res) {
-  // Strip JWT from the token
-  const token = req.body.token.replace(/^JWT\s/, '')
+  if (!checkIfTokenSent(req)) {
+    return res.sendStatus(UNAUTHORIZED)
+  }
 
-  jwt.verify(token, config.secretKey, function (error, decoded) {
-    if (error) {
-      // Unauthorized
-      res.sendStatus(UNAUTHORIZED)
-    } else {
-      res.status(OK).send(decoded)
-    }
-  })
+  const decoded = checkIfTokenValid(req)
+  if (decoded) {
+    res.status(OK).send(decoded)
+  } else {
+    res.sendStatus(UNAUTHORIZED)
+  }
 })
 
 // Helpers
@@ -345,11 +375,9 @@ function testPasswordStrength (password) {
   const strongMessage =
     'Invalid password. Requires 1 uppercase, 1 lowercase, 1 number and 1 special character: !@#$%^&'
 
-  const mediumRegex = new RegExp(
-    '^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})'
-  )
+  const mediumRegex = new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])')
   const mediumMessage =
-    'invalid password. Requires 1 uppercase or lowercase and 1 number'
+    'Password requires one uppercase character and one number.'
   /* eslint-enable */
 
   // test the password against the strong regex & return true if it passes
