@@ -121,19 +121,19 @@ if (typeof module !== 'undefined' && !module.parent) {
   const loggingApiEndpoints = __dirname + '/logging/';
   const mailerApiEndpoints = __dirname + '/mailer/mailer.js';
 
-  const generalServer = new SceHttpServer(generalApiEndpoints, 8080);
+  const generalServer = new SceHttpServer([generalApiEndpoints, loggingApiEndpoints, mailerApiEndpoints], 8080);
   const loggingServer = new SceHttpServer(loggingApiEndpoints, 8081);
   const mailerServer = new SceHttpServer(mailerApiEndpoints, 8082);
 
   generalServer.initializeEndpoints().then(() => {
     generalServer.openConnection();
   });
-  loggingServer.initializeEndpoints().then(() => {
-    loggingServer.openConnection();
-  });
-  mailerServer.initializeEndpoints().then(() => {
-    mailerServer.openConnection();
-  });
+  // loggingServer.initializeEndpoints().then(() => {
+  //   loggingServer.openConnection();
+  // });
+  // mailerServer.initializeEndpoints().then(() => {
+  //   mailerServer.openConnection();
+  // });
 }
 
 module.exports = { SceHttpServer };
