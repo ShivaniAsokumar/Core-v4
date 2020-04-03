@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
+import { Container } from 'reactstrap';
 import './home.css';
-import Slideshow from '../../Components/Slideshow/Slideshow.js';
+//import Slideshow from '../../Components/Slideshow/Slideshow.js';
 import Footer from '../../Components/Footer/Footer.js';
 import Benefits from '../../Components/Benefits/Benefits.js';
 import Jumbotron from '../../Components/Jumbotron/Jumbotron.js';
 import Iframe from 'react-iframe';
+//import collage from '../../public/images/sce-collage.png';
 // import Calendar from '../../Calendar/App.js'; <Calendar/>
 
 /*
@@ -26,26 +28,35 @@ import Iframe from 'react-iframe';
         America%2FLos_Angeles" style="border-width:0" width="1000"
         height="850" frameborder="0" scrolling="no"/>
         */
+       const pic = [
+        {
+          src: 'sce-collage.jpg',
+          altText: 'Officers',
+          header: '2019-2020 Officers',
+          top: '25%'
+        }
+       ];
 
 class Home extends Component {
   render() {
     return (
       <>
-        <div className='home'>
-          <Slideshow className='slideshow' />
-          <Jumbotron />
+        <Container className='home'>
+          <div className='home'>
+            {/* <Slideshow className='slideshow' /> */}
+            <Jumbotron />
 
-          <div className='text-center'>
-            <h1 className='display-4'>SCE Events Calendar</h1>{' '}
-          </div>
-          <p className='lead text-center'>
-            {' '}
-            Add SCE Calendar to your own by clicking the Google Calendar icon on
-            the bottom right side!
-          </p>
+            {/* <div className='text-center'>
+              <h1 className='display-4'>SCE Events Calendar</h1>{' '}
+            </div>
+            <p className='lead text-center'>
+              {' '}
+              Add SCE Calendar to your own by clicking the Google Calendar icon
+              on the bottom right side!
+            </p> */}
 
           <div className='outer-div'>
-            <div className='inner-div'>
+            {/* <div className='inner-div'>
               <Iframe
                 // Unable to breka up iframe url
                 // eslint-disable-next-line
@@ -53,11 +64,12 @@ class Home extends Component {
                 className='calendar'
                 allowFullScreen
               />
-            </div>
+            </div> */}
+            <Benefits className='benefits' />
+            <Footer />
           </div>
-          <Benefits className='benefits' />
-          <Footer />
-        </div>
+          </div>
+        </Container>
       </>
     );
   }
