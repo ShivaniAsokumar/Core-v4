@@ -6,7 +6,7 @@ import Footer from '../../Components/Footer/Footer.js';
 import Benefits from '../../Components/Benefits/Benefits.js';
 import Jumbotron from '../../Components/Jumbotron/Jumbotron.js';
 import Iframe from 'react-iframe';
-//import collage from '../../public/images/sce-collage.png';
+//import Image from 'https://user-images.githubusercontent.com/56044487/80262112-49f4d600-8641-11ea-8f3c-b17437db411f.png';
 // import Calendar from '../../Calendar/App.js'; <Calendar/>
 
 /*
@@ -28,9 +28,9 @@ import Iframe from 'react-iframe';
         America%2FLos_Angeles" style="border-width:0" width="1000"
         height="850" frameborder="0" scrolling="no"/>
         */
-       const pic = [
+       const collage = [
         {
-          src: 'sce-collage.jpg',
+          src: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUSEhIVFhUVFRUXFRUXFRUVFRUXFRUXFhUVFRUYHSggGBolHRUVITEhJSkrLi4uFx8zODMtNygtLisBCgoKDg0OGhAQGy0lHyUtLS0tLS0tLS0tLS0tLS0tLS0tLS0rLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIAMIBAwMBIgACEQEDEQH/xAAcAAABBQEBAQAAAAAAAAAAAAACAAEDBAUGBwj/xABBEAABAgMFAwkFBgUEAwAAAAABAAIDBBEFEiExQVFhcQYTIjKBkaGx0RRCUpLBByNDU+HwFTNigrJyosLSJCVE/8QAGgEAAwEBAQEAAAAAAAAAAAAAAAECAwQFBv/EACoRAAICAQMEAQQCAwEAAAAAAAABAhEDEzFRBBIhQWEUMnGhgZEi4fBC/9oADAMBAAIRAxEAPwDUb',
           altText: 'Officers',
           header: '2019-2020 Officers',
           top: '25%'
@@ -43,6 +43,8 @@ class Home extends Component {
       <>
         <Container className='home'>
           <div className='home'>
+            <img src = "https://user-images.githubusercontent.com/56044487/80643922-b561ed80-8a1d-11ea-84c9-e7880ca408a5.png"></img> 
+              
             {/* <Slideshow className='slideshow' /> */}
             <Jumbotron />
 

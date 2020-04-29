@@ -1,11 +1,17 @@
-.slideshow {
+.image {
+  width: max-content;
+  position: relative;
+  height: auto;
+}
+
+/* .slideshow {
   max-width: auto;
   position: relative;
   margin: auto;
   height: auto;
   overflow: hidden;
   object-fit: cover;
-}
+} */
 
 .outer-div
 {
