@@ -1,7 +1,8 @@
-.image {
-  width: max-content;
+.background-collage {
+  max-width: -webkit-fill-available;
   position: relative;
   height: auto;
+  opacity: 50%;
 }
 
 /* .slideshow {

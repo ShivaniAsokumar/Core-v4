@@ -43,7 +43,7 @@ class Home extends Component {
       <>
         <Container className='home'>
           <div className='home'>
-            <img src = "https://user-images.githubusercontent.com/56044487/80643922-b561ed80-8a1d-11ea-84c9-e7880ca408a5.png"></img> 
+            <img className = 'background-collage' src = "https://user-images.githubusercontent.com/56044487/80765197-4658c780-8af7-11ea-8cb5-ed6b280a228e.jpg"></img> 
               
             {/* <Slideshow className='slideshow' /> */}
             <Jumbotron />
