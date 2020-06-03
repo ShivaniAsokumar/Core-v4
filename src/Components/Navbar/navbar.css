@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300&display=swap");
 
 .user-nav {
   font-size: 18px;
@@ -11,7 +11,7 @@
   margin-bottom: 20px;
 }
 
-.nav-button{
+.nav-button {
   padding: 9px 20px;
   border-radius: 50px;
   background-color: #96bdf0af;
@@ -21,20 +21,25 @@
 .nav-link:hover {
   color: rgb(191, 227, 241);
 }
- 
-.admin-nav{
-  font-family: 'Poppins', sans-serif;
+
+.admin-nav {
+  font-family: "Poppins", sans-serif;
   font-weight: 500;
-  background-color:#648cc0;
+  background-color: #648cc0;
   color: rgba(255, 255, 255);
   text-decoration: none;
 }
 
-.nav-admin-link{
-  color: white!important;
+.nav-admin-link {
+  color: white !important;
   fill: white;
-} 
+}
 
 .sce-nav {
   flex-flow: row wrap;
+}
+
+.icon-images {
+  width: 20px;
+  height: 20px;
 }
