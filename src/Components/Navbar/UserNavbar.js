@@ -81,16 +81,7 @@ export default function UserNavBar(props) {
       <Navbar light expand='md'>
         <NavbarBrand href='/'>
           <div>
-            <img
-              src={logo}
-              alt={'sce logo'}
-              style={{
-                width: 50,
-                marginTop: -7,
-                marginBottom: -7,
-                marginLeft: 10
-              }}
-            />
+            <img id='logo-image' src={logo} alt={'sce logo'}/>
           </div>
         </NavbarBrand>
         <NavbarToggler
@@ -111,9 +102,9 @@ export default function UserNavBar(props) {
             {props.user && props.user.accessLevel >= membershipState.MEMBER && (
               <UncontrolledDropdown nav inNavbar>
                 <DropdownToggle
+                  id='navlink-text'
                   nav
                   caret
-                  style={{ color: 'white', fontWeight: 'bold' }}
                 >
                   Printing
                 </DropdownToggle>
@@ -129,7 +120,7 @@ export default function UserNavBar(props) {
               return (
                 <NavItem key={index}>
                   <NavLink
-                    style={{ color: 'white', fontWeight: 'bold' }}
+                    id='navlink-text'
                     href={link.route}
                   >
                     {link.title}
@@ -139,13 +130,13 @@ export default function UserNavBar(props) {
             })}
             {props.authenticated && props.user ? (
               <UncontrolledDropdown nav inNavbar>
-                <DropdownToggle nav caret style={{ color: 'white' }}>
+                <DropdownToggle id='navlink-text' nav caret>
                   <svg
-                    style={{ width: '30px', height: '30px' }}
+                    className='profile-image'
                     viewBox='0 0 24 24'
                   >
                     <path
-                      fill='#AAAAAA'
+                      fill='white'
                       d='M12,19.2C9.5,19.2 7.29,17.92 6,16C6.03,14 10,12.9 12,
                       12.9C14,12.9 17.97,14 18,16C16.71,17.92 14.5,19.2 12,
                       19.2M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,
@@ -163,7 +154,7 @@ export default function UserNavBar(props) {
                   <DropdownItem>
                     <div onClick={() => props.handleLogout()}>
                       <svg
-                        style={{ width: '18px', height: '18px' }}
+                        className='logout-image'
                         viewBox='0 0 24 24'
                       >
                         <path
@@ -180,13 +171,9 @@ export default function UserNavBar(props) {
             ) : (
               <UncontrolledDropdown nav inNavbar>
                 <DropdownToggle
+                  id='navlink-text'
                   nav
                   caret
-                  style={{
-                    color: 'white',
-                    marginRight: 10,
-                    fontWeight: 'bold'
-                  }}
                 >
                   Join Us!
                 </DropdownToggle>

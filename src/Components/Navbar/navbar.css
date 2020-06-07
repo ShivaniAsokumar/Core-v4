@@ -43,3 +43,25 @@
   width: 20px;
   height: 20px;
 }
+
+#navlink-text {
+  color: white;
+  font-weight: bold;
+}
+
+#logo-image {
+  width: 50px;
+  margin-top: -5;
+  margin-bottom: -5;
+  margin-left: 10;
+}
+
+.logout-image {
+  width: 18px;
+  height: 18px;
+}
+
+.profile-image {
+  width: 30px;
+  height: 30px;
+}
