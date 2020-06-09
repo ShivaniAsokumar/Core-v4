@@ -39,6 +39,11 @@ module.exports = {
     USER: 'sce.sjsu@gmail.com',
     REFRESH_TOKEN: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
   },
+
+  googleCalendarIds: {
+    PRIMARY_CAL: 'primary',
+    SCE_EVENTS_CAL: 'XXXXXXXXXXXXXXXXXXXXXXXXXXX'
+  },
   // The ip address of the sign. You can find it by running `ifconfig` on the pi
   ledSignIp: '192.168.4.1'
 };
