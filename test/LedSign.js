@@ -98,7 +98,7 @@ describe('LedSign', () => {
       signResponse = response.body;
       expect(response).to.have.status(OK);
     });
-    it('Should return the correct values when modified', done => {
+    it('Should return the correct values when modified', async () => {
       healthCheckMock.resolves(SUCCESS_MESSAGE);
       expect(signResponse.text).to.equal(VALID_SIGN_REQUEST.text);
       expect(signResponse.brightness).to.equal(VALID_SIGN_REQUEST.brightness);
@@ -107,87 +107,50 @@ describe('LedSign', () => {
         .to.equal(VALID_SIGN_REQUEST.backgroundColor);
       expect(signResponse.textColor).to.equal(VALID_SIGN_REQUEST.textColor);
       expect(signResponse.borderColor).to.equal(VALID_SIGN_REQUEST.borderColor);
-      done();
     });
-    it('Should return statusCode 404 when the sign is down', done => {
+    it('Should return statusCode 404 when the sign is down', async () => {
       healthCheckMock.rejects(ERROR_MESSAGE);
-      chai
-        .request(app)
-        .post('/api/LedSign/healthCheck')
-        .then(function(res) {
-          expect(res).to.have.status(NOT_FOUND);
-          done();
-        })
-        .catch(err => {
-          throw err;
-        });
+      const response = await test.sendPostRequest(
+        '/api/LedSign/healthCheck', officer);
+      expect(response).to.have.status(NOT_FOUND);
     });
   });
 
   describe('/POST updateSignText', () => {
-    it('Should return statusCode 200 when the sign text is updated', done => {
+    it('Should return statusCode 200 when the sign' +
+      'text is updated', async () => {
       updateSignTextMock.resolves(SUCCESS_MESSAGE);
-      chai
-        .request(app)
-        .post('/api/LedSign/updateSignText')
-        .send(VALID_SIGN_REQUEST)
-        .then(function(res) {
-          expect(res).to.have.status(OK);
-          done();
-        })
-        .catch(err => {
-          throw err;
-        });
+      const response = await test.sendPostRequest(
+        '/api/LedSign/updateSignText', VALID_SIGN_REQUEST);
+      expect(response).to.have.status(OK);
     });
-    it('Should return statusCode 400 when the sign is down', done => {
+    it('Should return statusCode 400 when the sign is down', async () => {
       updateSignTextMock.rejects(ERROR_MESSAGE);
-      chai
-        .request(app)
-        .post('/api/LedSign/updateSignText')
-        .then(function(res) {
-          expect(res).to.have.status(BAD_REQUEST);
-          done();
-        })
-        .catch(err => {
-          throw err;
-        });
+      const response = await test.sendPostRequest(
+        '/api/LedSign/updateSignText', null);
+      expect(response).to.have.status(BAD_REQUEST);
     });
-    it('Should return 400 when required fields are not filled in ', done => {
+    it('Should return 400 when required fields are not filled', async () => {
       updateSignTextMock.resolves(SUCCESS_MESSAGE);
-      chai
-        .request(app)
-        .post('/api/LedSign/updateSignText')
-        .send(INVALID_SIGN_REQUEST)
-        .then(function(res) {
-          expect(res).to.have.status(BAD_REQUEST);
-          done();
-        })
-        .catch(err => {
-          throw err;
-        });
+      const response = await test.sendPostRequest(
+        '/api/LedSign/updateSignText', INVALID_SIGN_REQUEST);
+      expect(response).to.have.status(BAD_REQUEST);
     });
   });
 
   describe('/GET getSignLogs', () => {
-    it('Should return an object of all events', done => {
-      chai
-        .request(app)
-        .get('/api/LedSign/getSignLogs')
-        .then(function(res) {
-          expect(res).to.have.status(OK);
-          const getSignResponse = res.body;
-          getSignResponse.should.be.a('array');
-          expect(getSignResponse).to.have.length(1);
-          expect(getSignResponse[0].signTitle)
-            .to.equal(VALID_SIGN_REQUEST.text);
-          expect(getSignResponse[0].firstName)
-            .to.equal(VALID_SIGN_REQUEST.firstName);
-          expect(getSignResponse[0].email).to.equal(VALID_SIGN_REQUEST.email);
-          done();
-        })
-        .catch(err => {
-          throw err;
-        });
+    it('Should return an object of all events', async () => {
+      const response = await test.sendGetRequest(
+        '/api/LedSign/getSignLogs');
+      expect(response).to.have.status(OK);
+      const getSignResponse = response.body;
+      getSignResponse.should.be.a('array');
+      expect(getSignResponse).to.have.length(1);
+      expect(getSignResponse[0].signTitle)
+        .to.equal(VALID_SIGN_REQUEST.text);
+      expect(getSignResponse[0].firstName)
+        .to.equal(VALID_SIGN_REQUEST.firstName);
+      expect(getSignResponse[0].email).to.equal(VALID_SIGN_REQUEST.email);
     });
   });
 });
