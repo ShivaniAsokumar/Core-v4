@@ -6,6 +6,9 @@ import { formatFirstAndLastName } from '../../../APIFunctions/Profile';
 import Header from '../../../Components/Header/Header';
 import PrintRequest from './PrintRequest';
 import ChangePassword from './ChangePassword';
+import { Button } from 'reactstrap';
+import Footer from '../../../Components/Footer/Footer.js';
+import { connectToDiscord } from '../../../APIFunctions/User';
 
 const membershipStatus = require('../../../Enums').membershipState;
 
@@ -25,6 +28,7 @@ export default class Profile extends Component {
 
 	async componentDidMount() {
 		const response = await searchUserByEmail(this.props.user.email, this.props.user.token);
+		console.log(this.props.user.firstName);
 		if (!response.error) {
 			//concat user to full name
 			this.setState({ user: response.responseData }, () => {
@@ -35,50 +39,86 @@ export default class Profile extends Component {
 		}
 	}
 
+	async handleDiscordAuth() {
+		const response = await connectToDiscord(this.props.user.email, this.props.user.token);
+
+		window.open(response.responseData);
+	}
+
 	render() {
 		const fields = this.state.user
 			? [
-				{ title: `Welcome, ${this.state.fullName}!`, value: '', style: '4rem' },
-				{
-					title: 'Door Code', value: this.state.user.doorCode,
-					icon: <i class="fas fa-door-open" />
-				},
-				{
-					title: 'Joined Date',
-					value: this.state.user.joinDate.slice(0, 10),
-					icon: <i class="fas fa-calendar-day" />
-				},
-				{ title: `${this.state.user.email}`, value: '', style: '2.5rem' },
-				{
-					title: 'Membership Expiration',
-					value:
-						this.props.user.accessLevel < membershipStatus.MEMBER
-							? 'Not Valid'
-							: this.state.user.membershipValidUntil.slice(0, 10),
-					icon: <i class="fas fa-exclamation-triangle" />
-				},
-				{ title: '2D Prints', value: '', icon: <i class="fas fa-print" /> },
-				{ title: 'Request 3D Printing', value: <PrintRequest />, icon: <i class="fas fa-cubes" /> },
-				{ title: 'Connect with Discord', value: '', icon: <i class="fab fa-discord" /> },
-				{ title: 'Change Password', value: <ChangePassword />, icon: <i class="fas fa-lock" /> }
-			]
+					{ title: `Welcome, ${this.state.fullName}!`, value: '', style: '4rem' },
+					{
+						title: 'Door Code',
+						value: this.state.user.doorCode,
+						icon: <i class="fas fa-door-open" />
+					},
+					{
+						title: 'Joined Date',
+						value: this.state.user.joinDate.slice(0, 10),
+						icon: <i class="fas fa-calendar-day" />
+					},
+					{ title: `${this.state.user.email}`, value: '', style: '2.5rem' },
+					{
+						title: 'Membership Expiration',
+						value:
+							this.props.user.accessLevel < membershipStatus.MEMBER
+								? 'Not Valid'
+								: this.state.user.membershipValidUntil.slice(0, 10),
+						icon: <i class="fas fa-exclamation-triangle" />
+					},
+					{
+						title: '2D Prints',
+						value: '',
+						icon: <i class="fas fa-print" />,
+						function: () => {
+							window.location.href = '/2DPrinting';
+						}
+					},
+					{ title: 'Request 3D Printing', value: <PrintRequest />, icon: <i class="fas fa-cubes" /> },
+					{
+						title: 'Connect with Discord',
+						value: '',
+						icon: <i class="fab fa-discord" />,
+						function: () => {
+							this.handleDiscordAuth();
+						}
+					},
+					{ title: 'Change Password', value: <ChangePassword />, icon: <i class="fas fa-lock" /> }
+				]
 			: [
-				{ title: '', value: '' },
-				{ title: 'Door Code', value: '' },
-				{ title: 'Joined Date', value: '' },
-				{ title: 'Email', value: '' },
-				{ title: 'Membership Expiration', value: '' },
-				{ title: '2D Prints', value: '' },
-				{ title: 'Request 3D Printing', value: '' },
-				{ title: 'Sign-in with Discord', value: '' },
-				{ title: 'Change Password', value: '' }
-			];
+					{ title: '', value: '' },
+					{ title: 'Door Code', value: '' },
+					{ title: 'Joined Date', value: '' },
+					{ title: 'Email', value: '' },
+					{ title: 'Membership Expiration', value: '' },
+					{ title: '2D Prints', value: '' },
+					{ title: 'Request 3D Printing', value: '' },
+					{ title: 'Sign-in with Discord', value: '' },
+					{ title: 'Change Password', value: '' }
+				];
 
 		return (
 			<div id="app">
 				<Header {...this.headerProps} />
 
-				<InfoCard fields={fields} user={{ ...this.state.user, token: this.props.user.token }} />
+				{/* <InfoCard
+					fields={fields}
+					user={{ ...this.state.user, token: this.props.user.token }}
+					handleDiscordAuth={this.handleDiscordAuth}
+				/> */}
+
+				<div id="enclose">
+					<div id="profile-box">
+						{fields.map((elem, ind) => {
+							return (
+								<InfoCard field={elem} user={{ ...this.state.user, token: this.props.user.token }} />
+							);
+						})}
+					</div>
+				</div>
+				<Footer />
 			</div>
 		);
 	}
